@@ -31,13 +31,10 @@ jobs:
         run: |
           ./tagger tag data/WSJ_24.pos -o WSJ_24_out.txt
           ./tagger tag data/WSJ_24_sys.pos -o WSJ_24_sys_out.txt
-          echo "===================================" > GRADE.txt
-          echo "Test on WSJ_24:" >> GRADE.txt
+          echo -e "## Test on WSJ_24\n" > GRADE.txt
           ./score.py data/WSJ_24.pos WSJ_24_out.txt >> GRADE.txt
-          echo "-----------------------------------" >> GRADE.txt
-          echo "Test on WSJ_24_sys:" >> GRADE.txt
+          echo -e "## Test on WSJ_24_sys\n" >> GRADE.txt
           ./score.py data/WSJ_24_sys.pos WSJ_24_sys_out.txt >> GRADE.txt
-          echo "===================================" >> GRADE.txt
 
       - name: Grade
         run: |
