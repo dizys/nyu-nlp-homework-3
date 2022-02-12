@@ -11,6 +11,7 @@ __pycache__/
 
 *.log
 output.txt
-state.json
+states.json
 GRADE.txt
 *_out.txt
+submission.pos
