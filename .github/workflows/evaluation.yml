@@ -57,7 +57,7 @@ jobs:
         run: |
           cp README.txt zz2960_HW3_README.txt
           cp src/main.py main_zz2960_HW3.py
-          zip -r zz2960-HW3_${TAG}.zip README.txt submission.pos main_zz2960_HW3.py
+          zip -r zz2960-HW3_${TAG}.zip zz2960_HW3_README.txt main_zz2960_HW3.py submission.pos
 
       - name: Release
         uses: softprops/action-gh-release@v1
