@@ -1,8 +1,9 @@
 name: Evaluation
+
 on:
   push:
-    branches:
-      - main
+    branches: [main]
+    tags: ["*"]
 
 jobs:
   build:
@@ -41,3 +42,31 @@ jobs:
       - name: Grade
         run: |
           cat GRADE.txt
+          echo 'GRADE<<EOF' >> $GITHUB_ENV
+          cat GRADE.txt >> $GITHUB_ENV
+          echo 'EOF' >> $GITHUB_ENV
+
+      - name: Get tag name
+        if: startsWith(github.ref, 'refs/tags/')
+        run: echo "TAG=${GITHUB_REF#refs/tags/}" >> $GITHUB_ENV
+
+      - name: Final test
+        if: startsWith(github.ref, 'refs/tags/')
+        run: |
+          ./tagger tag data/WSJ_23.words -o submission.pos
+
+      - name: Package
+        if: startsWith(github.ref, 'refs/tags/')
+        run: |
+          cp README.txt zz2960_HW3_README.txt
+          cp src/main.py main_zz2960_HW3.py
+          zip -r zz2960-HW3_${TAG}.zip README.md submission.pos main_zz2960_HW3.py
+
+      - name: Release
+        uses: softprops/action-gh-release@v1
+        if: startsWith(github.ref, 'refs/tags/')
+        with:
+          body: ${{ env.GRADE }}
+          files: |
+            zz2960-HW3_${{ env.TAG }}.zip
+            GRADE.txt
