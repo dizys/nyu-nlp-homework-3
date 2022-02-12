@@ -11,5 +11,8 @@
   "files.trimTrailingWhitespace": true,
   "[python]": {
     "editor.defaultFormatter": "ms-python.python"
-  }
+  },
+  "cSpell.words": [
+    "Viterbi"
+  ]
 }
