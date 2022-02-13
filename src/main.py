@@ -81,6 +81,7 @@ def train(inputfile: str, statefile: str) -> None:
     tag_tag_count = {}
     with open(inputfile, "r", encoding="utf-8") as f:
         last_tag = 'B'
+        tag_count['B'] = tag_count.get('B', 0) + 1
         for line in f:
             line = line.strip()
             if line:
@@ -103,6 +104,7 @@ def train(inputfile: str, statefile: str) -> None:
                     tag_tag_count[last_tag] = {}
                 if tag not in tag_tag_count[last_tag]:
                     tag_tag_count[last_tag][tag] = 0
+                tag_count['E'] = tag_count.get('E', 0) + 1
                 tag_tag_count[last_tag][tag] += 1
                 tag_count['B'] = tag_count.get('B', 0) + 1
                 last_tag = 'B'
