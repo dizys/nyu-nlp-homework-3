@@ -25,7 +25,7 @@ jobs:
 
       - name: Train
         run: |
-          ./tagger train data/WSJ_02-21.pos
+          ./tagger train data/WSJ_total.pos
 
       - name: Test
         run: |
