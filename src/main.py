@@ -24,60 +24,63 @@ class ViterbiHMMPOSTagger:
         tag_tag_count = self.tag_tag_count
 
         # Initialize the viterbi table
-        viterbi_table = {}
+        viterbi_table = [{'B': 1}]
+        backpointer_table = [{'B': 'B'}]
+
         for word in sentence:
-            for tag in tag_count:
-                if word not in word_tag_count:
-                    viterbi_table[(word, tag)] = 0
-                else:
-                    viterbi_table[(word, tag)] = 0
+            last_viterbi_row = viterbi_table[-1]
+            new_viterbi_row = {}
+            new_backpointer_row = {}
 
-        # Initialize the backpointer table
-        backpointer_table = {}
-        for word in sentence:
             for tag in tag_count:
-                backpointer_table[(word, tag)] = ''
-
-        # Initialize the first row
-        for tag in tag_count:
-            if sentence[0] in word_tag_count:
-                viterbi_table[(sentence[0], tag)
-                              ] = word_tag_count[sentence[0]][tag] / tag_count[tag]
-            else:
-                viterbi_table[(sentence[0], tag)] = 0
-
-        # Iterate over the rest of the rows
-        for i in range(1, len(sentence)):
-            for tag in tag_count:
-                max_prob = 0
-                max_tag = ''
-                for prev_tag in tag_count:
-                    if (sentence[i], tag) in word_tag_count:
-                        prob = viterbi_table[(sentence[i], prev_tag)] * tag_tag_count[prev_tag][tag] * \
-                            word_tag_count[sentence[i]][tag] / \
-                            tag_count[prev_tag]
+                max_last_tag = None
+                max_prob = -1
+                for last_tag in last_viterbi_row:
+                    last_tag_prob = last_viterbi_row[last_tag]
+                    if last_tag in tag_tag_count and tag in tag_tag_count[last_tag]:
+                        trans_prob = tag_tag_count[last_tag][tag] / \
+                            tag_count[last_tag]
                     else:
-                        prob = viterbi_table[(
-                            sentence[i], prev_tag)] * tag_tag_count[prev_tag][tag] / tag_count[prev_tag]
+                        trans_prob = 0
+                    if word in word_tag_count and tag in word_tag_count[word]:
+                        emission_prob = word_tag_count[word][tag] / \
+                            tag_count[tag]
+                    else:
+                        emission_prob = 1 / 1000
+                    prob = last_tag_prob * trans_prob * emission_prob
                     if prob > max_prob:
+                        max_last_tag = last_tag
                         max_prob = prob
-                        max_tag = prev_tag
-                viterbi_table[(sentence[i], tag)] = max_prob
-                backpointer_table[(sentence[i], tag)] = max_tag
+                if max_last_tag:
+                    new_viterbi_row[tag] = max_prob
+                    new_backpointer_row[tag] = max_last_tag
 
-        # Find the best path
-        max_prob = 0
-        max_tag = ''
-        for tag in tag_count:
-            if viterbi_table[(sentence[-1], tag)] > max_prob:
-                max_prob = viterbi_table[(sentence[-1], tag)]
-                max_tag = tag
-        tag_sequence = [max_tag]
-        for i in range(len(sentence) - 1, 0, -1):
-            tag_sequence.append(
-                backpointer_table[(sentence[i], tag_sequence[-1])])
-        tag_sequence.reverse()
-        return tag_sequence
+            viterbi_table.append(new_viterbi_row)
+            backpointer_table.append(new_backpointer_row)
+
+        # End of sentence
+        last_viterbi_row = viterbi_table[-1]
+        max_last_tag = None
+        max_prob = -1
+        for last_tag in last_viterbi_row:
+            last_tag_prob = last_viterbi_row[last_tag]
+            if last_tag in tag_tag_count and 'E' in tag_tag_count[last_tag]:
+                trans_prob = tag_tag_count[last_tag]['E'] / tag_count[last_tag]
+            else:
+                trans_prob = 0
+            prob = last_tag_prob * trans_prob
+            if prob > max_prob:
+                max_last_tag = last_tag
+                max_prob = prob
+
+        if not max_last_tag:
+            return []
+        # find the best path back
+        tags = [max_last_tag]
+        for i in range(len(backpointer_table) - 2):
+            max_last_tag = backpointer_table[-i - 1][max_last_tag]
+            tags.insert(0, max_last_tag)
+        return tags
 
 
 def train(inputfile: str, statefile: str) -> None:
