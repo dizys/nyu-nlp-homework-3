@@ -1,3 +1,11 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+"""
+NYU NLP Homework 3: Implement a Viterbi HMM POS tagger
+    by Ziyang Zeng (zz2960)
+    Spring 2022
+"""
+
 import json
 import argparse
 

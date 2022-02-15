@@ -1,4 +1,6 @@
 NYU NLP Homework 3: Implement a Viterbi HMM POS tagger
+    by Ziyang Zeng (zz2960)
+    Spring 2022
 
 Pre-requisites:
     - Python 3.7+
