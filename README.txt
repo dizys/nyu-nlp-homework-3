@@ -4,7 +4,7 @@ NYU NLP Homework 3: Implement a Viterbi HMM POS tagger
     Spring 2022
 
 Pre-requisites:
-    - Python 3.7+
+    - Python 3.8+
 
 How did I handle OOV:
     I did the last suggested approach, which is combination of treating single appearance words as unknown words and classify them into common suffixes.
