@@ -17,7 +17,7 @@ How to run:
 
         optional arguments:
         -h, --help     show this help message and exit
-        -s STATEFILE   path for storing/reading trained state file, default is states.json
+        -s STATEFILE   path for storing/reading trained state file, default is states.pkl
         -o OUTPUTFILE  path for storing tagged output file, default is output.txt
 
 Examples:
