@@ -9,7 +9,30 @@ NYU NLP Homework 3: Implement a Viterbi HMM POS tagger
 import argparse
 import pickle
 
-from typing import Dict, List, Tuple, Set, TypedDict
+from typing import Dict, List, Tuple, Set, Union, TypedDict
+
+suffixes: List[Union[List[str], str]] = [['able', 'ible'], 'al', 'an', 'ar', 'ed', 'en', ['er', 'or'],
+                                         'est', 'ing', ['ish', 'ous', 'ful', 'less'], 'ive', 'ly', ['ment', 'ness'], 'y']
+
+
+def get_unknown_word_class_by_suffix(word: str) -> str:
+    word_class = "UNKNOWN"
+    for suffix in suffixes:
+        if type(suffix) == list:
+            word_suffix_class = suffix[0].upper()
+            selected = False
+            for suffix_item in suffix:
+                if word.endswith(suffix_item):
+                    word_class = f"UNKNOWN_AFFIXED_WITH_{word_suffix_class}"
+                    selected = True
+                    break
+            if selected:
+                break
+        else:
+            if word.endswith(suffix):
+                word_class = f"UNKNOWN_AFFIXED_WITH_{suffix.upper()}"
+                break
+    return word_class
 
 
 class TrainedStates(TypedDict):
@@ -46,7 +69,11 @@ class ViterbiHMMPOSTagger:
                     if (word, tag) in emission_tb:
                         emission_prob = emission_tb[(word, tag)]
                     else:
-                        emission_prob = 1 / 1000
+                        word_class = get_unknown_word_class_by_suffix(word)
+                        if (word_class, tag) in emission_tb:
+                            emission_prob = emission_tb[(word_class, tag)]
+                        else:
+                            emission_prob = 1 / 1000
                     prob = last_tag_prob * trans_prob * emission_prob
                     if prob > max_prob:
                         max_last_tag = last_tag
@@ -83,7 +110,7 @@ class ViterbiHMMPOSTagger:
 class BasicStatistics(TypedDict):
     word_tag_count: Dict[str, Dict[str, int]]
     tag_set: Set[str]
-    word_set: Set[str]
+    word_count: Dict[str, int]
     tag_count: Dict[str, int]
     tag_tag_count: Dict[str, Dict[str, int]]
 
@@ -91,7 +118,7 @@ class BasicStatistics(TypedDict):
 def train_get_statistics(lines: List[str]) -> 'BasicStatistics':
     word_tag_count: Dict[Tuple[str, str], int] = {}
     tag_set: Set[str] = set(['B', 'E'])
-    word_set: Set[str] = set()
+    word_count: Dict[str, int] = {}
     tag_count: Dict[str, int] = {}
     tag_tag_count: Dict[Tuple[str, str], int] = {}
 
@@ -112,7 +139,7 @@ def train_get_statistics(lines: List[str]) -> 'BasicStatistics':
         tag_tag_count[(last_tag, tag)] = tag_tag_count.get(
             (last_tag, tag), 0) + 1
         if word:
-            word_set.add(word)
+            word_count[word] = word_count.get(word, 0) + 1
             tag_set.add(tag)
             word_tag_count[(word, tag)] = word_tag_count.get(
                 (word, tag), 0) + 1
@@ -121,7 +148,25 @@ def train_get_statistics(lines: List[str]) -> 'BasicStatistics':
             last_tag = tag
         else:
             last_tag = 'B'
-    return BasicStatistics(word_tag_count=word_tag_count, tag_set=tag_set, word_set=word_set, tag_count=tag_count, tag_tag_count=tag_tag_count)
+    return BasicStatistics(word_tag_count=word_tag_count, tag_set=tag_set, word_count=word_count, tag_count=tag_count, tag_tag_count=tag_tag_count)
+
+
+def train_unkownify_statistics(statistics: BasicStatistics) -> BasicStatistics:
+    word_tag_count = statistics["word_tag_count"]
+    word_count = statistics["word_count"].copy()
+
+    for word, count in statistics["word_count"].items():
+        if count > 1:
+            continue
+        word_class = get_unknown_word_class_by_suffix(word)
+        word_count.pop(word)
+        word_count[word_class] = word_count.get(word_class, 0) + 1
+        for tag in statistics["tag_count"].keys():
+            original_word_tag_count = word_tag_count.pop((word, tag), 0)
+            word_tag_count[(word_class, tag)] = word_tag_count.get(
+                (word_class, tag), 0) + original_word_tag_count
+
+    return BasicStatistics(word_tag_count=word_tag_count, tag_set=statistics["tag_set"], word_count=word_count, tag_count=statistics["tag_count"], tag_tag_count=statistics["tag_tag_count"])
 
 
 def train_get_trans_prob(tag_count: Dict[str, int], tag_tag_count: Dict[Tuple[str, str], int]) -> Dict[Tuple[str, str], float]:
@@ -138,9 +183,9 @@ def train_get_trans_prob(tag_count: Dict[str, int], tag_tag_count: Dict[Tuple[st
     return trans_prob
 
 
-def train_get_emission_prob(word_set: Set[str], tag_count: Dict[str, int], word_tag_count: Dict[Tuple[str, str], int]) -> Dict[Tuple[str, str], float]:
+def train_get_emission_prob(word_count: Dict[str, int], tag_count: Dict[str, int], word_tag_count: Dict[Tuple[str, str], int]) -> Dict[Tuple[str, str], float]:
     emission_prob: Dict[Tuple[str, str], float] = {}  # (word, tag) -> prob
-    for word in word_set:
+    for word in word_count.keys():
         for tag in tag_count.keys():
             word_tag = word_tag_count.get((word, tag), 0)
             tag_total = tag_count.get(tag, 0)
@@ -156,14 +201,15 @@ def train(inputfile: str, statefile: str) -> None:
     with open(inputfile, 'r') as f:
         lines = f.readlines()
     statistics = train_get_statistics(lines)
+    statistics = train_unkownify_statistics(statistics)
     trans_prob = train_get_trans_prob(
         statistics["tag_count"], statistics["tag_tag_count"])
     emission_prob = train_get_emission_prob(
-        statistics["word_set"], statistics["tag_count"], statistics["word_tag_count"])
+        statistics["word_count"], statistics["tag_count"], statistics["word_tag_count"])
     states = TrainedStates(
         trans_prob=trans_prob, emission_prob=emission_prob, tags=statistics["tag_set"])
     print(
-        f"{len(statistics['word_set'])} distinct words, {len(statistics['tag_count'])} tags")
+        f"{len(statistics['word_count'])} distinct words, {len(statistics['tag_count'])} tags")
     print(f"{len(trans_prob)} trans_prob pairs, {len(emission_prob)} emission pairs.")
     with open(statefile, "wb") as f:
         pickle.dump(states, f)
