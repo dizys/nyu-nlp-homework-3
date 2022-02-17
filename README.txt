@@ -1,4 +1,5 @@
 NYU NLP Homework 3: Implement a Viterbi HMM POS tagger
+    Improved the unknown-word tagging by classify the unknown by common suffixes
     by Ziyang Zeng (zz2960)
     Spring 2022
 

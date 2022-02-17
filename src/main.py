@@ -11,6 +11,7 @@ import pickle
 
 from typing import Dict, List, Tuple, Set, Union, TypedDict
 
+# For the word whose count is 1, we substitute it with the word affix class instead
 suffixes: List[Union[List[str], str]] = [['able', 'ible'], 'al', 'an', 'ar', 'ed', 'en', ['er', 'or'],
                                          'est', 'ing', ['ish', 'ous', 'ful', 'less'], 'ive', 'ly', ['ment', 'ness'], 'y']
 
